@@ -4,19 +4,21 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { Trend, Rate } from 'k6/metrics';
 
-export const getContactsDuration = new Trend('get_contacts', true);
+export const getCatFactDuration = new Trend('get_cat_fact', true);
 export const RateContentOK = new Rate('content_OK');
 
 export const options = {
-  thresholds: {
-    http_req_failed: ['rate<0.30'],
-    get_contacts: ['p(99)<500'],
-    content_OK: ['rate>0.95']
-  },
+  startVUs: 7,
   stages: [
-    { duration: '5s', target: 2 },
-    { duration: '5s', target: 6 }
-  ]
+    { duration: '1m', target: 7 }, // Inicia/mantém 7 VUs
+    { duration: '1m30s', target: 92 }, // Rampa até o máximo de 92 VUs
+    { duration: '1m', target: 0 } // Rampa de encerramento (total: 3m30s = 3,5 min)
+  ],
+  thresholds: {
+    http_req_duration: ['p(90)<6800'], // 90% das respostas abaixo de 6800ms
+    http_req_failed: ['rate<0.25'], // Menos de 25% das requisições com erro
+    content_OK: ['rate>0.75'] // Pelo menos 75% com status 200
+  }
 };
 
 export function handleSummary(data) {
@@ -27,23 +29,23 @@ export function handleSummary(data) {
 }
 
 export default function () {
-  const baseUrl = 'https://test.k6.io/';
+  // Diretório: https://freepublicapis.com/cat-fact-api
+  // Endpoint JSON direto da Cat Fact API: https://catfact.ninja/fact
+  const url = 'https://freepublicapis.com/cat-fact-api';
 
   const params = {
     headers: {
-      'Content-Type': 'application/json'
+      Accept: 'application/json'
     }
   };
 
   const OK = 200;
+  const res = http.get(url, params);
 
-  const res = http.get(`${baseUrl}`, params);
-
-  getContactsDuration.add(res.timings.duration);
-
+  getCatFactDuration.add(res.timings.duration);
   RateContentOK.add(res.status === OK);
 
   check(res, {
-    'GET Contacts - Status 200': () => res.status === OK
+    'GET Cat Fact API - Status 200': () => res.status === OK
   });
 }
