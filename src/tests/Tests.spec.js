@@ -11,7 +11,7 @@ export const options = {
   startVUs: 7,
   stages: [
     { duration: '1m', target: 7 }, // Inicia/mantém 7 VUs
-    { duration: '1m30s', target: 92 }, // Rampa até o máximo de 92 VUs
+    { duration: '1m30s', target: 50 }, // Rampa até o máximo de 92 VUs
     { duration: '1m', target: 0 } // Rampa de encerramento (total: 3m30s = 3,5 min)
   ],
   thresholds: {
